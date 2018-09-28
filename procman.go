@@ -207,3 +207,31 @@ func (pm *ProcessManager) RunAsyncWait(binary string, options *ProcessManagerPro
 	}
 
 }
+func (pm *ProcessManager) RunExec(pr *ExecAsyncCommand) (*ProcessManagerProcess, error) {
+
+	options, err := Processes.DefaultProcessOptions()
+
+	if err != nil {
+		return nil, err
+	}
+
+	proc := newProcManProcessFromExec(pm, options, pr)
+
+	if err := proc.Start(); err != nil {
+		return nil, err
+	} else if err := pm.addProcessToMap(proc); err == nil {
+		return proc, nil
+	} else {
+		return nil, err
+	}
+
+}
+func (pm *ProcessManager) RunExecWait(pr *ExecAsyncCommand) error {
+
+	if proc, err := pm.RunExec(pr); err == nil {
+		return proc.Wait()
+	} else {
+		return err
+	}
+
+}

@@ -87,9 +87,70 @@ func newProcManProcess(procMan *ProcessManager, binary string, options *ProcessM
 
 }
 
+func newProcManProcessFromExec(procMan *ProcessManager, options *ProcessManagerProcessOptions, eproc *ExecAsyncCommand) *ProcessManagerProcess {
+
+	if options.CWD != "" {
+
+		eproc.Proc.Dir = options.CWD
+
+	}
+
+	if options.ENV != nil && len(options.ENV) > 0 {
+
+		env := os.Environ()
+
+		for key, val := range options.ENV {
+
+			env = append(env, fmt.Sprintf("%s=\"%s\"", key, val))
+
+		}
+
+		eproc.Proc.Env = env
+
+	}
+
+	if options.OutputStdErr {
+		errScanner := bufio.NewScanner(eproc.error)
+		go func() {
+			for errScanner.Scan() {
+				txt := errScanner.Text()
+				if options.ParseStdErrLine != nil {
+					options.ParseStdErrLine(txt)
+				}
+				log.Print(txt)
+			}
+		}()
+	}
+
+	if options.OutputStdOut {
+		scanner := bufio.NewScanner(eproc.reader)
+		go func() {
+			for scanner.Scan() {
+				txt := scanner.Text()
+				if options.ParseStdOutLine != nil {
+					options.ParseStdOutLine(txt)
+				}
+				log.Print(txt)
+			}
+		}()
+	}
+
+	pmp := ProcessManagerProcess{
+		pm:       procMan,
+		execProc: eproc,
+		options:  options,
+		waitChan: make(chan bool),
+	}
+
+	return &pmp
+
+}
+
 func (pmp *ProcessManagerProcess) Signal(signal os.Signal) error {
 
 	log.Printf("Signalling process with %d", signal)
+
+	pmp.waitChan <- true
 
 	return pmp.execProc.Proc.Process.Signal(signal)
 
@@ -117,6 +178,7 @@ func (pmp *ProcessManagerProcess) Start() error {
 	go func() {
 
 		err := pmp.execProc.Proc.Wait()
+		fmt.Println("Ending Run Proc")
 		defer close(pmp.waitChan)
 		if err != nil {
 			pmp.waitErr = err

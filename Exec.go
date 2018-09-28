@@ -59,6 +59,22 @@ func (ec *ExecAsyncCommand) SetEnv(env []string) *ExecAsyncCommand {
 	return ec
 }
 
+func (ec *ExecAsyncCommand) Start() error {
+	if !ec.errOnly {
+		defer ec.reader.Close()
+	}
+	if ec.intChan != nil && ec.intBound {
+		defer close(ec.intChan)
+	}
+	defer ec.writer.Close()
+	defer ec.error.Close()
+	fmt.Printf("$: %s %s\n", ec.Proc.Path, strings.Join(ec.Proc.Args, ` `))
+	if err := ec.Proc.Start(); err != nil {
+		return err
+	}
+	return nil
+}
+
 func (ec *ExecAsyncCommand) StartAndWait() error {
 	if !ec.errOnly {
 		defer ec.reader.Close()
