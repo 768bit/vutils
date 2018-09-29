@@ -136,6 +136,19 @@ func (fu *filesUtils) Copy(src, dest string) error {
 	return rcopy(src, dest, info)
 }
 
+// Copy copies src to dest, doesn't matter if src is a directory or a file, deletes src after completion
+func (fu *filesUtils) CopyRM(src, dest string) error {
+	info, err := os.Lstat(src)
+	if err != nil {
+		return err
+	}
+	err = rcopy(src, dest, info)
+	if err == nil {
+		return os.RemoveAll(src)
+	}
+	return err
+}
+
 // copy dispatches copy-funcs according to the mode.
 // Because this "copy" could be called recursively,
 // "info" MUST be given here, NOT nil.
