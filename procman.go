@@ -215,6 +215,10 @@ func (pm *ProcessManager) RunExec(pr *ExecAsyncCommand) (*ProcessManagerProcess,
 		return nil, err
 	}
 
+	if !pr.errOnly {
+		options.OutputStdOut = true
+	}
+
 	proc := newProcManProcessFromExec(pm, options, pr)
 
 	if err := proc.Start(); err != nil {

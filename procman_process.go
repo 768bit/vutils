@@ -117,7 +117,7 @@ func newProcManProcessFromExec(procMan *ProcessManager, options *ProcessManagerP
 				if options.ParseStdErrLine != nil {
 					options.ParseStdErrLine(txt)
 				}
-				log.Print(txt)
+				fmt.Println(txt)
 			}
 		}()
 	}
@@ -130,7 +130,7 @@ func newProcManProcessFromExec(procMan *ProcessManager, options *ProcessManagerP
 				if options.ParseStdOutLine != nil {
 					options.ParseStdOutLine(txt)
 				}
-				log.Print(txt)
+				fmt.Println(txt)
 			}
 		}()
 	}

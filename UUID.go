@@ -13,6 +13,20 @@ type uuidUtils struct {
 	uuidStringNoDashesRx *regexp.Regexp
 }
 
+func (uu *uuidUtils) MakeUUID() (*uuid.UUID, error) {
+
+	rpcID, err := uuid.NewRandom()
+
+	if err != nil {
+
+		return nil, err
+
+	}
+
+	return &rpcID, nil
+
+}
+
 func (uu *uuidUtils) MakeUUIDString() (string, error) {
 
 	rpcID, err := uuid.NewRandom()
