@@ -1,8 +1,8 @@
 package vutils
 
 import (
-	"github.com/pkg/errors"
-	"golang.org/x/net/context"
+	"context"
+	"errors"
 	"golang.org/x/sync/errgroup"
 	"log"
 	"os"

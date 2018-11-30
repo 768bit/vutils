@@ -1,9 +1,9 @@
 package vutils
 
 import (
+	"errors"
 	"fmt"
 	"github.com/google/uuid"
-	"github.com/pkg/errors"
 	"regexp"
 	"strings"
 )

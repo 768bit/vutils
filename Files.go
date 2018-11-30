@@ -117,12 +117,37 @@ func (fu *filesUtils) RemoveTempFolderContents(dir string) error {
 	return nil
 }
 
+func (fu *filesUtils) PathExists(path string) bool {
+
+	if _, err := os.Stat(path); os.IsNotExist(err) {
+		return false
+	} else if err != nil {
+		return false
+	}
+	return true
+
+}
+
 func (fu *filesUtils) CreateDirIfNotExist(dir string) error {
 	if _, err := os.Stat(dir); os.IsNotExist(err) {
 		err = os.MkdirAll(dir, 0755)
 		if err != nil {
 			return err
 		}
+	}
+	return nil
+}
+
+func (fu *filesUtils) AppendStringToFile(path, text string) error {
+	f, err := os.OpenFile(path, os.O_APPEND|os.O_WRONLY, os.ModeAppend)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	_, err = f.WriteString(text)
+	if err != nil {
+		return err
 	}
 	return nil
 }
