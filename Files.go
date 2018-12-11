@@ -152,6 +152,20 @@ func (fu *filesUtils) AppendStringToFile(path, text string) error {
 	return nil
 }
 
+func (fu *filesUtils) DirSize(path string) (int64, error) {
+	var size int64
+	err := filepath.Walk(path, func(_ string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		if !info.IsDir() {
+			size += info.Size()
+		}
+		return err
+	})
+	return size, err
+}
+
 // Copy copies src to dest, doesn't matter if src is a directory or a file
 func (fu *filesUtils) Copy(src, dest string) error {
 	info, err := os.Lstat(src)
