@@ -168,6 +168,21 @@ func (fu *filesUtils) DirSize(path string) (int64, error) {
 	return size, err
 }
 
+func (fu *filesUtils) GetFilesInDirWithExtension(dir string, ext string) []string {
+	//fmt.Println("Checking for files with ext", ext, "in", dir)
+	var files []string
+	filepath.Walk(dir, func(path string, f os.FileInfo, _ error) error {
+		if !f.IsDir() {
+			//fmt.Println("Checking", f.Name(), "Path:", path, "Ext:", filepath.Ext(path))
+			if filepath.Ext(path) == ext {
+				files = append(files, f.Name())
+			}
+		}
+		return nil
+	})
+	return files
+}
+
 // Copy copies src to dest, doesn't matter if src is a directory or a file
 func (fu *filesUtils) Copy(src, dest string) error {
 	info, err := os.Lstat(src)
