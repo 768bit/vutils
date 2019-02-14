@@ -545,7 +545,7 @@ func (cm *ContentsMap) makeDestPath(destRoot string, builtPath []string, dest st
 func (cm *ContentsMap) makeDestFilePath(destRoot string, dest string) string {
 	destPath := destRoot
 	if dest[0] == '/' {
-		return filepath.Join(destPath, destPath[1:])
+		return filepath.Join(destPath, dest[1:])
 	}
 	return filepath.Join(destPath, dest)
 }
