@@ -111,7 +111,7 @@ func (ec *ExecAsyncCommand) StartAndWait() error {
 	}
 	defer ec.writer.Close()
 	defer ec.error.Close()
-	fmt.Printf("$: %s %s\n", ec.Proc.Path, strings.Join(ec.Proc.Args, ` `))
+	//fmt.Printf("$: %s %s\n", ec.Proc.Path, strings.Join(ec.Proc.Args, ` `))
 	if err := ec.Proc.Start(); err != nil {
 		return err
 	} else if err := ec.Proc.Wait(); err != nil {
