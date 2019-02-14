@@ -409,7 +409,7 @@ func (cm *ContentsMap) runExcludeIncludeRules(destRoot string, path string, dirI
 				}
 				return true, nil
 			}
-			cleanRule = cleanRule[2:0]
+			cleanRule = cleanRule[2:]
 			fullRule = filepath.Join(actualSourcePath, cleanRule)
 		} else {
 			cleanRule = strings.Replace(cleanRule, actualSourcePath, "", 1)
