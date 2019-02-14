@@ -46,12 +46,14 @@ func (ec *ExecAsyncCommand) BindToStdoutAndStdErr() *ExecAsyncCommand {
 func (ec *ExecAsyncCommand) CaptureStdoutAndStdErr() *ExecAsyncCommand {
 	if !ec.errOnly {
 		go func() {
-			io.Copy(ec.stdoutBuffer, ec.reader)
+			stdoutWriter := bufio.NewWriter(&ec.stdoutBuffer)
+			io.Copy(stdoutWriter, ec.reader)
 		}()
 	}
 
 	go func() {
-		io.Copy(ec.stdoutBuffer, ec.error)
+		stderrWriter := bufio.NewWriter(&ec.stderrBuffer)
+		io.Copy(stderrWriter, ec.error)
 	}()
 	return ec
 }
