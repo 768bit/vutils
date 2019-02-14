@@ -19,13 +19,15 @@ type execUtils struct {
 }
 
 type ExecAsyncCommand struct {
-	Proc     *exec.Cmd
-	errOnly  bool
-	reader   io.ReadCloser
-	error    io.ReadCloser
-	writer   io.WriteCloser
-	intChan  chan os.Signal
-	intBound bool
+	Proc         *exec.Cmd
+	errOnly      bool
+	reader       io.ReadCloser
+	error        io.ReadCloser
+	writer       io.WriteCloser
+	stdoutBuffer bytes.Buffer
+	stderrBuffer bytes.Buffer
+	intChan      chan os.Signal
+	intBound     bool
 }
 
 func (ec *ExecAsyncCommand) BindToStdoutAndStdErr() *ExecAsyncCommand {
@@ -39,6 +41,27 @@ func (ec *ExecAsyncCommand) BindToStdoutAndStdErr() *ExecAsyncCommand {
 		io.Copy(os.Stderr, ec.error)
 	}()
 	return ec
+}
+
+func (ec *ExecAsyncCommand) CaptureStdoutAndStdErr() *ExecAsyncCommand {
+	if !ec.errOnly {
+		go func() {
+			io.Copy(ec.stdoutBuffer, ec.reader)
+		}()
+	}
+
+	go func() {
+		io.Copy(ec.stdoutBuffer, ec.error)
+	}()
+	return ec
+}
+
+func (ec *ExecAsyncCommand) GetStdoutBuffer() []byte {
+	return ec.stdoutBuffer.Bytes()
+}
+
+func (ec *ExecAsyncCommand) GetStderrBuffer() []byte {
+	return ec.stderrBuffer.Bytes()
 }
 
 func (ec *ExecAsyncCommand) SetWorkingDir(path string) *ExecAsyncCommand {
