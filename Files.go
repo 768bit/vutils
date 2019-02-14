@@ -218,10 +218,34 @@ func rcopy(src, dest string, info os.FileInfo) error {
 	return fcopy(src, dest, info)
 }
 
+// copy dispatches copy-funcs according to the mode.
+// Because this "copy" could be called recursively,
+// "info" MUST be given here, NOT nil.
+func rcopyMode(src, dest string, info os.FileInfo, mode os.FileMode, isMode bool, resolveSymbolicLinks bool) error {
+	if info.Mode()&os.ModeSymlink != 0 {
+		if resolveSymbolicLinks {
+			return lcopyResolveMode(src, dest, info, mode)
+		}
+		return lcopyMode(src, dest, info, mode)
+	}
+	if info.IsDir() {
+		return dcopyMode(src, dest, info, mode, isMode, resolveSymbolicLinks)
+	}
+	return fcopyMode(src, dest, info, mode)
+}
+
 // fcopy is for just a file,
 // with considering existence of parent directory
 // and file permission.
 func fcopy(src, dest string, info os.FileInfo) error {
+
+	return fcopyMode(src, dest, info, info.Mode())
+}
+
+// fcopy is for just a file,
+// with considering existence of parent directory
+// and file permission.
+func fcopyMode(src, dest string, info os.FileInfo, mode os.FileMode) error {
 
 	if err := os.MkdirAll(filepath.Dir(dest), os.ModePerm); err != nil {
 		return err
@@ -233,7 +257,7 @@ func fcopy(src, dest string, info os.FileInfo) error {
 	}
 	defer f.Close()
 
-	if err = os.Chmod(f.Name(), info.Mode()); err != nil {
+	if err = os.Chmod(dest, mode); err != nil {
 		return err
 	}
 
@@ -250,9 +274,9 @@ func fcopy(src, dest string, info os.FileInfo) error {
 // dcopy is for a directory,
 // with scanning contents inside the directory
 // and pass everything to "copy" recursively.
-func dcopy(srcdir, destdir string, info os.FileInfo) error {
+func dcopyMode(srcdir, destdir string, info os.FileInfo, mode os.FileMode, isMode bool, resolveSymbolicLinks bool) error {
 
-	if err := os.MkdirAll(destdir, info.Mode()); err != nil {
+	if err := os.MkdirAll(destdir, mode); err != nil {
 		return err
 	}
 
@@ -263,12 +287,25 @@ func dcopy(srcdir, destdir string, info os.FileInfo) error {
 
 	for _, content := range contents {
 		cs, cd := filepath.Join(srcdir, content.Name()), filepath.Join(destdir, content.Name())
-		if err := rcopy(cs, cd, content); err != nil {
+		subMode := mode
+		if !isMode {
+			subMode = content.Mode()
+		}
+		if err := rcopyMode(cs, cd, content, subMode, isMode, resolveSymbolicLinks); err != nil {
 			// If any error, exit immediately
 			return err
 		}
 	}
 	return nil
+}
+
+// dcopy is for a directory,
+// with scanning contents inside the directory
+// and pass everything to "copy" recursively.
+func dcopy(srcdir, destdir string, info os.FileInfo) error {
+
+	return dcopyMode(srcdir, destdir, info, info.Mode(), false, false)
+
 }
 
 // lcopy is for a symlink,
@@ -279,6 +316,47 @@ func lcopy(src, dest string, info os.FileInfo) error {
 		return err
 	}
 	return os.Symlink(src, dest)
+}
+
+// lcopy is for a symlink,
+// with just creating a new symlink by replicating src symlink.
+func lcopyMode(src, dest string, info os.FileInfo, mode os.FileMode) error {
+	src, err := os.Readlink(src)
+	if err != nil {
+		return err
+	}
+	err = os.Symlink(src, dest)
+	if err != nil {
+		return err
+	}
+
+	return os.Chmod(dest, mode)
+}
+
+// lcopy is for a symlink,
+// with just creating a new symlink by replicating src symlink.
+func lcopyResolveMode(src, dest string, info os.FileInfo, mode os.FileMode) error {
+	src, err := os.Readlink(src)
+	if err != nil {
+		return err
+	}
+	linfo, err := os.Lstat(src)
+	if err != nil {
+		return err
+	}
+	return rcopyMode(src, dest, linfo, mode, true, true)
+}
+
+func resolvelink(path string) (string, os.FileInfo, error) {
+	src, err := os.Readlink(path)
+	if err != nil {
+		return "", nil, err
+	}
+	linfo, err := os.Lstat(src)
+	if err != nil {
+		return "", nil, err
+	}
+	return src, linfo, nil
 }
 
 var Files = &filesUtils{}
