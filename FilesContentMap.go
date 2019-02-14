@@ -2,6 +2,7 @@ package vutils
 
 import (
 	"errors"
+	"fmt"
 	"github.com/bmatcuk/doublestar"
 	"os"
 	"path/filepath"
@@ -509,7 +510,9 @@ func (cm *ContentsMap) doFileCopy(destRoot string, fileItem *ContentsMapDestinat
 		if fmode == 0 {
 			fmode = info.Mode()
 		}
-		if err := fcopyMode(fileItem.sourcePath, cm.makeDestFilePath(destRoot, fileItem.destPath), info, fmode); err != nil {
+		fullDestPath := cm.makeDestFilePath(destRoot, fileItem.destPath)
+		fmt.Println("Copying From", fileItem.sourcePath, "to", fileItem.destPath, "resolved dest:", fullDestPath)
+		if err := fcopyMode(fileItem.sourcePath, fullDestPath, info, fmode); err != nil {
 			return err
 		}
 	}
