@@ -19,18 +19,28 @@ type execUtils struct {
 }
 
 type ExecAsyncCommand struct {
-	Proc         *exec.Cmd
-	errOnly      bool
-	reader       io.ReadCloser
-	error        io.ReadCloser
-	writer       io.WriteCloser
-	stdoutBuffer bytes.Buffer
-	stderrBuffer bytes.Buffer
-	intChan      chan os.Signal
-	intBound     bool
+	Proc           *exec.Cmd
+	errOnly        bool
+	reader         io.ReadCloser
+	error          io.ReadCloser
+	writer         io.WriteCloser
+	stdoutBuffer   bytes.Buffer
+	stdoutWriter   *bufio.Writer
+	stderrBuffer   bytes.Buffer
+	intChan        chan os.Signal
+	intBound       bool
+	stdioBound     bool
+	stdioCapture   bool
+	combineCapture bool
 }
 
 func (ec *ExecAsyncCommand) BindToStdoutAndStdErr() *ExecAsyncCommand {
+	if ec.stdioBound {
+		return ec
+	} else if ec.stdioCapture {
+		log.Println("Unable to Bind STDIO as STDIO is already being captured.")
+		return ec
+	}
 	if !ec.errOnly {
 		go func() {
 			io.Copy(os.Stdout, ec.reader)
@@ -40,21 +50,55 @@ func (ec *ExecAsyncCommand) BindToStdoutAndStdErr() *ExecAsyncCommand {
 	go func() {
 		io.Copy(os.Stderr, ec.error)
 	}()
+	ec.stdioBound = true
 	return ec
 }
 
-func (ec *ExecAsyncCommand) CaptureStdoutAndStdErr() *ExecAsyncCommand {
+func (ec *ExecAsyncCommand) CaptureStdoutAndStdErr(combine bool, outputToStdIO bool) *ExecAsyncCommand {
+	if ec.stdioCapture {
+		return ec
+	} else if ec.stdioBound {
+		log.Println("Unable to Capture STDIO as STDIO is already bound.")
+		return ec
+	}
 	if !ec.errOnly {
 		go func() {
-			stdoutWriter := bufio.NewWriter(&ec.stdoutBuffer)
-			io.Copy(stdoutWriter, ec.reader)
+			if outputToStdIO {
+				outScanner := bufio.NewScanner(ec.reader)
+				stdoutWriter := bufio.NewWriter(&ec.stdoutBuffer)
+				if combine {
+					ec.stdoutWriter = stdoutWriter
+				}
+				for outScanner.Scan() {
+					txt := outScanner.Text()
+					log.Print(txt)
+					stdoutWriter.WriteString(txt)
+				}
+			} else {
+				stdoutWriter := bufio.NewWriter(&ec.stdoutBuffer)
+				io.Copy(stdoutWriter, ec.reader)
+			}
 		}()
 	}
 
 	go func() {
-		stderrWriter := bufio.NewWriter(&ec.stderrBuffer)
-		io.Copy(stderrWriter, ec.error)
+		if outputToStdIO || (combine && !ec.errOnly) {
+			outScanner := bufio.NewScanner(ec.reader)
+			stderrWriter := bufio.NewWriter(&ec.stderrBuffer)
+			for outScanner.Scan() {
+				txt := outScanner.Text()
+				log.Print(txt)
+				stderrWriter.WriteString(txt)
+				if combine && !ec.errOnly {
+					ec.stdoutWriter.WriteString(txt)
+				}
+			}
+		} else {
+			stderrWriter := bufio.NewWriter(&ec.stderrBuffer)
+			io.Copy(stderrWriter, ec.error)
+		}
 	}()
+	ec.stdioCapture = true
 	return ec
 }
 
