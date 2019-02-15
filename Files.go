@@ -362,4 +362,8 @@ func resolvelink(path string) (string, os.FileInfo, error) {
 	return src, linfo, nil
 }
 
+func (fu *filesUtils) ResolveLink(path string) (string, os.FileInfo, error) {
+	return resolvelink(path)
+}
+
 var Files = &filesUtils{}
