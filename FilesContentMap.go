@@ -17,12 +17,16 @@ func NewContentsMap(resolveSymboilcLinks bool) *ContentsMap {
 		dirs:                 map[SourcePath]*ContentsMapDestinationDirectory{},
 		files:                map[SourcePath]*ContentsMapDestinationFile{},
 		resolveSymboilcLinks: resolveSymboilcLinks,
+		dirsOrder:            []SourcePath{},
+		filesOrder:           []SourcePath{},
 	}
 }
 
 type ContentsMap struct {
 	dirs                 map[SourcePath]*ContentsMapDestinationDirectory
+	dirsOrder            []SourcePath
 	files                map[SourcePath]*ContentsMapDestinationFile
+	filesOrder           []SourcePath
 	resolveSymboilcLinks bool
 }
 
@@ -45,10 +49,48 @@ type ContentsMapDestinationDirectory struct {
 	isSymbolicResolve bool
 }
 
+func (cm *ContentsMap) OverlayContentsMap(sourceContentsMap *ContentsMap) error {
+	if sourceContentsMap == nil {
+		return errors.New("Source Contents Map is Empty")
+	}
+	if sourceContentsMap.dirsOrder != nil && len(sourceContentsMap.dirsOrder) > 0 {
+		for _, sourceDir := range sourceContentsMap.dirsOrder {
+			if dirItem, ok := sourceContentsMap.dirs[sourceDir]; ok && dirItem != nil {
+				var exclude []string
+				var include []string
+				if dirItem.exclude != nil && len(dirItem.exclude) > 0 {
+					exclude = append([]string{}, dirItem.exclude...)
+				}
+				if dirItem.include != nil && len(dirItem.include) > 0 {
+					include = append([]string{}, dirItem.include...)
+				}
+				err := cm.AddDirectoryIncludeExclude(sourceDir, dirItem.destPath, dirItem.mode, dirItem.recursive, include, exclude)
+				if err != nil {
+					return err
+				}
+			}
+		}
+	}
+	if sourceContentsMap.filesOrder != nil && len(sourceContentsMap.filesOrder) > 0 {
+		for _, sourceFile := range sourceContentsMap.filesOrder {
+			if fileItem, ok := sourceContentsMap.files[sourceFile]; ok && fileItem != nil {
+				err := cm.AddFile(sourceFile, fileItem.destPath, fileItem.mode)
+				if err != nil {
+					return err
+				}
+			}
+		}
+	}
+	return nil
+}
+
 func (cm *ContentsMap) AddDirectory(sourcePath string, destPath string, mode os.FileMode, recursive bool) error {
 	p := filepath.Clean(string(sourcePath))
 	if !Files.PathExists(p) {
 		return os.ErrNotExist
+	}
+	if _, ok := cm.dirs[p]; ok && sourceInSlice(p, cm.dirsOrder) {
+		cm.dirsOrder = removeAndAppendSourceFromSlice(p, cm.dirsOrder)
 	}
 	cm.dirs[p] = &ContentsMapDestinationDirectory{
 		sourcePath: p,
@@ -79,7 +121,10 @@ func (cm *ContentsMap) AddDirectoryExclude(sourcePath string, destPath string, m
 	if !Files.PathExists(p) {
 		return os.ErrNotExist
 	}
-	cm.dirs[sourcePath] = &ContentsMapDestinationDirectory{
+	if _, ok := cm.dirs[p]; ok && sourceInSlice(p, cm.dirsOrder) {
+		cm.dirsOrder = removeAndAppendSourceFromSlice(p, cm.dirsOrder)
+	}
+	cm.dirs[p] = &ContentsMapDestinationDirectory{
 		sourcePath: p,
 		mode:       mode,
 		destPath:   destPath,
@@ -89,10 +134,59 @@ func (cm *ContentsMap) AddDirectoryExclude(sourcePath string, destPath string, m
 	return nil
 }
 
+func (cm *ContentsMap) AddDirectoryIncludeExclude(sourcePath string, destPath string, mode os.FileMode, recursive bool, include []string, exclude []string) error {
+	p := filepath.Clean(string(sourcePath))
+	if !Files.PathExists(p) {
+		return os.ErrNotExist
+	}
+	if _, ok := cm.dirs[p]; ok && sourceInSlice(p, cm.dirsOrder) {
+		cm.dirsOrder = removeAndAppendSourceFromSlice(p, cm.dirsOrder)
+	}
+	cm.dirs[p] = &ContentsMapDestinationDirectory{
+		sourcePath: p,
+		mode:       mode,
+		destPath:   destPath,
+		recursive:  recursive,
+		exclude:    exclude,
+		include:    include,
+	}
+	return nil
+}
+
+func sourceInSlice(a SourcePath, list []SourcePath) bool {
+	for _, b := range list {
+		if b == a {
+			return true
+		}
+	}
+	return false
+}
+
+func removeSourceFromSlice(a SourcePath, list []SourcePath) []SourcePath {
+	for i, b := range list {
+		if b == a {
+			return append(list[:i], list[i+1:]...)
+		}
+	}
+	return list
+}
+
+func removeAndAppendSourceFromSlice(a SourcePath, list []SourcePath) []SourcePath {
+	for i, b := range list {
+		if b == a {
+			return append(list[:i], append(list[i+1:], a)...)
+		}
+	}
+	return list
+}
+
 func (cm *ContentsMap) AddFile(sourcePath string, destPath string, mode os.FileMode) error {
 	p := filepath.Clean(string(sourcePath))
 	if !Files.PathExists(p) {
 		return os.ErrNotExist
+	}
+	if _, ok := cm.files[p]; ok && sourceInSlice(p, cm.filesOrder) {
+		cm.filesOrder = removeAndAppendSourceFromSlice(p, cm.filesOrder)
 	}
 	cm.files[p] = &ContentsMapDestinationFile{
 		sourcePath: p,
