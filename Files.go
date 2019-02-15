@@ -356,6 +356,9 @@ func resolvelink(path string) (string, os.FileInfo, error) {
 	if err != nil {
 		return "", nil, err
 	}
+	if linfo.Mode()&os.ModeSymlink != 0 {
+		return resolvelink(src)
+	}
 	return src, linfo, nil
 }
 
