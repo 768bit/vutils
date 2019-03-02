@@ -104,10 +104,12 @@ func (ec *ExecAsyncCommand) CaptureStdoutAndStdErr(combine bool, outputToStdIO b
 }
 
 func (ec *ExecAsyncCommand) GetStdoutBuffer() []byte {
+	ec.stdoutWriter.Flush()
 	return ec.stdoutBuffer.Bytes()
 }
 
 func (ec *ExecAsyncCommand) GetStderrBuffer() []byte {
+	ec.stderrWriter.Flush()
 	return ec.stderrBuffer.Bytes()
 }
 
@@ -156,12 +158,12 @@ func (ec *ExecAsyncCommand) StartAndWait() error {
 	}
 	defer ec.writer.Close()
 	defer ec.error.Close()
-	if ec.stdioCapture && ec.stderrWriter != nil {
-		if !ec.errOnly && ec.stdoutWriter != nil {
-			defer ec.stdoutWriter.Flush()
-		}
-		defer ec.stderrWriter.Flush()
-	}
+	//if ec.stdioCapture && ec.stderrWriter != nil {
+	//	if !ec.errOnly && ec.stdoutWriter != nil {
+	//		defer ec.stdoutWriter.Flush()
+	//	}
+	//	defer ec.stderrWriter.Flush()
+	//}
 
 	fmt.Printf("$: %s %s\n", ec.Proc.Path, strings.Join(ec.Proc.Args, ` `))
 	if err := ec.Proc.Start(); err != nil {
