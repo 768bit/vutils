@@ -71,7 +71,7 @@ func (ec *ExecAsyncCommand) CaptureStdoutAndStdErr(combine bool, outputToStdIO b
 				}
 				for outScanner.Scan() {
 					txt := outScanner.Text()
-					log.Print(txt)
+					print(txt)
 					stdoutWriter.WriteString(txt)
 				}
 			} else {
@@ -87,7 +87,7 @@ func (ec *ExecAsyncCommand) CaptureStdoutAndStdErr(combine bool, outputToStdIO b
 			stderrWriter := bufio.NewWriter(&ec.stderrBuffer)
 			for outScanner.Scan() {
 				txt := outScanner.Text()
-				log.Print(txt)
+				print(txt)
 				stderrWriter.WriteString(txt)
 				if combine && !ec.errOnly {
 					ec.stdoutWriter.WriteString(txt)
