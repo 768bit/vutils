@@ -71,8 +71,8 @@ func (ec *ExecAsyncCommand) CaptureStdoutAndStdErr(combine bool, outputToStdIO b
 				}
 				for outScanner.Scan() {
 					txt := outScanner.Text()
-					print(txt)
-					stdoutWriter.WriteString(txt)
+					println(txt)
+					stdoutWriter.WriteString(txt + "\n")
 				}
 			} else {
 				stdoutWriter := bufio.NewWriter(&ec.stdoutBuffer)
@@ -87,10 +87,10 @@ func (ec *ExecAsyncCommand) CaptureStdoutAndStdErr(combine bool, outputToStdIO b
 			stderrWriter := bufio.NewWriter(&ec.stderrBuffer)
 			for outScanner.Scan() {
 				txt := outScanner.Text()
-				print(txt)
-				stderrWriter.WriteString(txt)
+				println(txt)
+				stderrWriter.WriteString(txt + "\n")
 				if combine && !ec.errOnly {
-					ec.stdoutWriter.WriteString(txt)
+					ec.stdoutWriter.WriteString(txt + "\n")
 				}
 			}
 		} else {
@@ -155,6 +155,7 @@ func (ec *ExecAsyncCommand) StartAndWait() error {
 	}
 	defer ec.writer.Close()
 	defer ec.error.Close()
+
 	//fmt.Printf("$: %s %s\n", ec.Proc.Path, strings.Join(ec.Proc.Args, ` `))
 	if err := ec.Proc.Start(); err != nil {
 		return err
