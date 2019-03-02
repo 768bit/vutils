@@ -65,16 +65,20 @@ func (ec *ExecAsyncCommand) CaptureStdoutAndStdErr(combine bool, outputToStdIO b
 	if !ec.errOnly {
 		go func() {
 			if outputToStdIO {
-				outScanner := bufio.NewScanner(ec.reader)
+				//outScanner := bufio.NewScanner(ec.reader)
 				ec.stdoutWriter = bufio.NewWriter(&ec.stdoutBuffer)
+
+				tee := io.TeeReader(ec.reader, ec.stdoutWriter)
+				io.Copy(ec.stdoutWriter, tee)
+
 				//if combine {
 				//	ec.stdoutWriter = stdoutWriter
 				//}
-				for outScanner.Scan() {
-					txt := outScanner.Text()
-					println(txt)
-					ec.stdoutWriter.WriteString(txt + "\n")
-				}
+				//for outScanner.Scan() {
+				//	txt := outScanner.Text()
+				//	println(txt)
+				//	ec.stdoutWriter.WriteString(txt + "\n")
+				//}
 			} else {
 				ec.stdoutWriter = bufio.NewWriter(&ec.stdoutBuffer)
 				io.Copy(ec.stdoutWriter, ec.reader)
@@ -84,16 +88,22 @@ func (ec *ExecAsyncCommand) CaptureStdoutAndStdErr(combine bool, outputToStdIO b
 
 	go func() {
 		if outputToStdIO || (combine && !ec.errOnly) {
-			outScanner := bufio.NewScanner(ec.reader)
+			//outScanner := bufio.NewScanner(ec.error)
 			ec.stderrWriter = bufio.NewWriter(&ec.stderrBuffer)
-			for outScanner.Scan() {
-				txt := outScanner.Text()
-				println(txt)
-				ec.stderrWriter.WriteString(txt + "\n")
-				if combine && !ec.errOnly {
-					ec.stdoutWriter.WriteString(txt + "\n")
-				}
+
+			tee := io.TeeReader(ec.error, ec.stderrWriter)
+			if combine && !ec.errOnly {
+				_ = io.TeeReader(tee, ec.stdoutWriter)
 			}
+			io.Copy(ec.stderrWriter, tee)
+			//for outScanner.Scan() {
+			//	txt := outScanner.Text()
+			//	println(txt)
+			//	ec.stderrWriter.WriteString(txt + "\n")
+			//	if combine && !ec.errOnly {
+			//		ec.stdoutWriter.WriteString(txt + "\n")
+			//	}
+			//}
 		} else {
 			ec.stderrWriter = bufio.NewWriter(&ec.stderrBuffer)
 			io.Copy(ec.stderrWriter, ec.error)
