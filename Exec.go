@@ -76,8 +76,8 @@ func (ec *ExecAsyncCommand) CaptureStdoutAndStdErr(combine bool, outputToStdIO b
 					ec.stdoutWriter.WriteString(txt + "\n")
 				}
 			} else {
-				stdoutWriter := bufio.NewWriter(&ec.stdoutBuffer)
-				io.Copy(stdoutWriter, ec.reader)
+				ec.stdoutWriter = bufio.NewWriter(&ec.stdoutBuffer)
+				io.Copy(ec.stdoutWriter, ec.reader)
 			}
 		}()
 	}
@@ -156,8 +156,8 @@ func (ec *ExecAsyncCommand) StartAndWait() error {
 	}
 	defer ec.writer.Close()
 	defer ec.error.Close()
-	if ec.stdioCapture {
-		if !ec.errOnly {
+	if ec.stdioCapture && ec.stderrWriter != nil {
+		if !ec.errOnly && ec.stdoutWriter != nil {
 			defer ec.stdoutWriter.Flush()
 		}
 		defer ec.stderrWriter.Flush()
