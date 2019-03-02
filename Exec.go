@@ -69,6 +69,7 @@ func (ec *ExecAsyncCommand) CaptureStdoutAndStdErr(combine bool, outputToStdIO b
 				ec.stdoutWriter = bufio.NewWriter(&ec.stdoutBuffer)
 
 				tee := io.TeeReader(ec.reader, ec.stdoutWriter)
+				_ = io.TeeReader(tee, os.Stdout)
 				io.Copy(ec.stdoutWriter, tee)
 
 				//if combine {
@@ -92,6 +93,7 @@ func (ec *ExecAsyncCommand) CaptureStdoutAndStdErr(combine bool, outputToStdIO b
 			ec.stderrWriter = bufio.NewWriter(&ec.stderrBuffer)
 
 			tee := io.TeeReader(ec.error, ec.stderrWriter)
+			_ = io.TeeReader(tee, os.Stderr)
 			if combine && !ec.errOnly {
 				_ = io.TeeReader(tee, ec.stdoutWriter)
 			}
