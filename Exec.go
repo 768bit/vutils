@@ -26,6 +26,7 @@ type ExecAsyncCommand struct {
 	writer         io.WriteCloser
 	stdoutBuffer   bytes.Buffer
 	stdoutWriter   *bufio.Writer
+	stderrWriter   *bufio.Writer
 	stderrBuffer   bytes.Buffer
 	intChan        chan os.Signal
 	intBound       bool
@@ -65,14 +66,14 @@ func (ec *ExecAsyncCommand) CaptureStdoutAndStdErr(combine bool, outputToStdIO b
 		go func() {
 			if outputToStdIO {
 				outScanner := bufio.NewScanner(ec.reader)
-				stdoutWriter := bufio.NewWriter(&ec.stdoutBuffer)
-				if combine {
-					ec.stdoutWriter = stdoutWriter
-				}
+				ec.stdoutWriter = bufio.NewWriter(&ec.stdoutBuffer)
+				//if combine {
+				//	ec.stdoutWriter = stdoutWriter
+				//}
 				for outScanner.Scan() {
 					txt := outScanner.Text()
 					println(txt)
-					stdoutWriter.WriteString(txt + "\n")
+					ec.stdoutWriter.WriteString(txt + "\n")
 				}
 			} else {
 				stdoutWriter := bufio.NewWriter(&ec.stdoutBuffer)
@@ -84,18 +85,18 @@ func (ec *ExecAsyncCommand) CaptureStdoutAndStdErr(combine bool, outputToStdIO b
 	go func() {
 		if outputToStdIO || (combine && !ec.errOnly) {
 			outScanner := bufio.NewScanner(ec.reader)
-			stderrWriter := bufio.NewWriter(&ec.stderrBuffer)
+			ec.stderrWriter = bufio.NewWriter(&ec.stderrBuffer)
 			for outScanner.Scan() {
 				txt := outScanner.Text()
 				println(txt)
-				stderrWriter.WriteString(txt + "\n")
+				ec.stderrWriter.WriteString(txt + "\n")
 				if combine && !ec.errOnly {
 					ec.stdoutWriter.WriteString(txt + "\n")
 				}
 			}
 		} else {
-			stderrWriter := bufio.NewWriter(&ec.stderrBuffer)
-			io.Copy(stderrWriter, ec.error)
+			ec.stderrWriter = bufio.NewWriter(&ec.stderrBuffer)
+			io.Copy(ec.stderrWriter, ec.error)
 		}
 	}()
 	ec.stdioCapture = true
@@ -155,6 +156,12 @@ func (ec *ExecAsyncCommand) StartAndWait() error {
 	}
 	defer ec.writer.Close()
 	defer ec.error.Close()
+	if ec.stdioCapture {
+		if !ec.errOnly {
+			defer ec.stdoutWriter.Flush()
+		}
+		defer ec.stderrWriter.Flush()
+	}
 
 	fmt.Printf("$: %s %s\n", ec.Proc.Path, strings.Join(ec.Proc.Args, ` `))
 	if err := ec.Proc.Start(); err != nil {
