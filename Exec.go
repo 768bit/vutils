@@ -95,9 +95,12 @@ func (ec *ExecAsyncCommand) CaptureStdoutAndStdErr(combine bool, outputToStdIO b
 			tee := io.TeeReader(ec.error, os.Stderr)
 			//_ = io.TeeReader(tee, os.Stderr)
 			if combine && !ec.errOnly {
-				_ = io.TeeReader(ec.error, ec.stdoutWriter)
+				outTee := io.TeeReader(tee, ec.stdoutWriter)
+				io.Copy(ec.stderrWriter, outTee)
+			} else {
+				io.Copy(ec.stderrWriter, tee)
 			}
-			io.Copy(ec.stderrWriter, tee)
+
 			//for outScanner.Scan() {
 			//	txt := outScanner.Text()
 			//	println(txt)
