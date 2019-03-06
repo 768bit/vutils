@@ -180,7 +180,7 @@ func (ec *ExecAsyncCommand) StartAndWait() error {
 	//	defer ec.stderrWriter.Flush()
 	//}
 
-	fmt.Printf("$: %s %s\n", ec.Proc.Path, strings.Join(ec.Proc.Args, ` `), "IN:", ec.Proc.Dir)
+	fmt.Printf("$: %s %s - IN: %s\n", ec.Proc.Path, strings.Join(ec.Proc.Args, ` `), ec.Proc.Dir)
 	if err := ec.Proc.Start(); err != nil {
 		return err
 	} else if err := ec.Proc.Wait(); err != nil {
