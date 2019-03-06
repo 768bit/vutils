@@ -189,7 +189,7 @@ func (fu *filesUtils) Copy(src, dest string) error {
 	if err != nil {
 		return err
 	}
-	return rcopy(src, dest, info)
+	return rcopyMode(src, dest, info, info.Mode(), false, false)
 }
 
 // Copy copies src to dest, doesn't matter if src is a directory or a file, deletes src after completion
@@ -247,6 +247,23 @@ func fcopy(src, dest string, info os.FileInfo) error {
 // and file permission.
 func fcopyMode(src, dest string, info os.FileInfo, mode os.FileMode) error {
 
+	if err := fcopyModeLower(src, dest, info, mode); err != nil {
+		return err
+	}
+
+	if err := os.Chmod(dest, mode); err != nil {
+		return err
+	}
+
+	return nil
+
+}
+
+// fcopy is for just a file,
+// with considering existence of parent directory
+// and file permission.
+func fcopyModeLower(src, dest string, info os.FileInfo, mode os.FileMode) error {
+
 	if err := os.MkdirAll(filepath.Dir(dest), os.ModePerm); err != nil {
 		return err
 	}
@@ -256,10 +273,6 @@ func fcopyMode(src, dest string, info os.FileInfo, mode os.FileMode) error {
 		return err
 	}
 	defer f.Close()
-
-	if err = os.Chmod(dest, mode); err != nil {
-		return err
-	}
 
 	s, err := os.Open(src)
 	if err != nil {
