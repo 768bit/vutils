@@ -198,7 +198,7 @@ func (fu *filesUtils) CopyRM(src, dest string) error {
 	if err != nil {
 		return err
 	}
-	err = rcopy(src, dest, info)
+	err = rcopyMode(src, dest, info, info.Mode(), false, false)
 	if err == nil {
 		return os.RemoveAll(src)
 	}
