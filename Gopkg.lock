@@ -2,6 +2,14 @@
 
 
 [[projects]]
+  digest = "1:2aaf2cc045d0219bba79655e4df795b973168c310574669cb75786684f7287d3"
+  name = "github.com/bmatcuk/doublestar"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "85a78806aa1b4707d1dbace9be592cf1ece91ab3"
+  version = "v1.1.1"
+
+[[projects]]
   digest = "1:236d7e1bdb50d8f68559af37dbcf9d142d56b431c9b2176d41e2a009b664cda8"
   name = "github.com/google/uuid"
   packages = ["."]
@@ -11,9 +19,11 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:082c538aa8ca5e086d5d20ec16417e7fca237de2c4146485e02aa09989d0ff38"
+  digest = "1:9c52d590d562124fc2883ea9c77e12b8b9e5ff96a37dd91756bb0694d1c53924"
   name = "golang.org/x/crypto"
   packages = [
+    "bcrypt",
+    "blowfish",
     "curve25519",
     "ed25519",
     "ed25519/internal/edwards25519",
@@ -37,7 +47,9 @@
   analyzer-name = "dep"
   analyzer-version = 1
   input-imports = [
+    "github.com/bmatcuk/doublestar",
     "github.com/google/uuid",
+    "golang.org/x/crypto/bcrypt",
     "golang.org/x/crypto/ssh",
     "golang.org/x/sync/errgroup",
   ]
