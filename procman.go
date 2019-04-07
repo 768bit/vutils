@@ -146,11 +146,15 @@ func (pm *ProcessManager) ShellWait(cmd string, options *ProcessManagerProcessOp
 
 func (pm *ProcessManager) ExecScript(scriptPath string, options *ProcessManagerProcessOptions, cmdArgs ...string) (*ProcessManagerProcess, error) {
 
-	nargs := make([]string, 1+len(cmdArgs))
-
-	nargs = append(nargs, cmdArgs...)
+	nargs := make([]string, 1)
 
 	nargs[0] = scriptPath
+
+	if len(cmdArgs) > 0 {
+
+		nargs = append(nargs, cmdArgs...)
+
+	}
 
 	if proc, err := pm.RunAsync("/bin/bash", options, nargs...); err != nil {
 		return nil, err
@@ -161,11 +165,15 @@ func (pm *ProcessManager) ExecScript(scriptPath string, options *ProcessManagerP
 }
 func (pm *ProcessManager) ExecScriptWait(scriptPath string, options *ProcessManagerProcessOptions, cmdArgs ...string) error {
 
-	nargs := make([]string, 1+len(cmdArgs))
+	nargs := make([]string, 1, 1)
 
 	nargs[0] = scriptPath
 
-	nargs = append(nargs, cmdArgs...)
+	if len(cmdArgs) > 0 {
+
+		nargs = append(nargs, cmdArgs...)
+
+	}
 
 	return pm.RunAsyncWait("/bin/bash", options, nargs...)
 
