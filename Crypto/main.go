@@ -1,6 +1,6 @@
 package Crypto
 
-import "gitlab.768bit.com/vann/vutils/Crypto/Hashing"
+import "github.com/768bit/vutils/Crypto/Hashing"
 
 type CryptoUtils struct {
 	Hashing *Hashing.HashingUtils
