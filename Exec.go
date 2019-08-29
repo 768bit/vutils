@@ -11,6 +11,7 @@ import (
 	"os"
 	"os/exec"
 	"os/signal"
+	"strconv"
 	"strings"
 	"syscall"
 )
@@ -19,8 +20,12 @@ type execUtils struct {
 }
 
 type ExecAsyncCommand struct {
+	path           string
+	args           []string
+	env            []string
 	Proc           *exec.Cmd
 	errOnly        bool
+	dir            string
 	reader         io.ReadCloser
 	error          io.ReadCloser
 	writer         io.WriteCloser
@@ -33,6 +38,27 @@ type ExecAsyncCommand struct {
 	stdioBound     bool
 	stdioCapture   bool
 	combineCapture bool
+	useSudo        bool
+}
+
+func (ec *ExecAsyncCommand) init() *ExecAsyncCommand {
+	if ec.env == nil {
+		ec.env = []string{}
+	}
+	if ec.useSudo {
+		cargs := append([]string{"-n", ec.path}, ec.args...)
+		ec.Proc = exec.Command("sudo", cargs...)
+	} else {
+		ec.Proc = exec.Command(ec.path, ec.args...)
+	}
+	if !ec.errOnly {
+		ec.reader, _ = ec.Proc.StdoutPipe()
+	}
+
+	ec.error, _ = ec.Proc.StderrPipe()
+	ec.writer, _ = ec.Proc.StdinPipe()
+
+	return ec
 }
 
 func (ec *ExecAsyncCommand) BindToStdoutAndStdErr() *ExecAsyncCommand {
@@ -129,26 +155,47 @@ func (ec *ExecAsyncCommand) GetStderrBuffer() []byte {
 }
 
 func (ec *ExecAsyncCommand) SetWorkingDir(path string) *ExecAsyncCommand {
-	ec.Proc.Dir = path
+	ec.dir = path
 	return ec
 }
 
 func (ec *ExecAsyncCommand) CopyEnv() *ExecAsyncCommand {
-	env := os.Environ()
-	return ec.SetEnv(env)
+	ec.env = os.Environ()
+	return ec
 }
 
 func (ec *ExecAsyncCommand) AddEnv(key string, value string) *ExecAsyncCommand {
-	ec.Proc.Env = append(ec.Proc.Env, fmt.Sprintf(`%s=%s`, key, value))
+	ec.env = append(ec.env, fmt.Sprintf(`%s=%s`, key, value))
 	return ec
 }
 
 func (ec *ExecAsyncCommand) SetEnv(env []string) *ExecAsyncCommand {
-	ec.Proc.Env = env
+	ec.env = env
+	return ec
+}
+
+func (ec *ExecAsyncCommand) Sudo() *ExecAsyncCommand {
+	if !ec.useSudo {
+		if Exec.CheckSudo() {
+			return ec
+		}
+		ec.useSudo = true
+		return ec.init()
+	}
+
 	return ec
 }
 
 func (ec *ExecAsyncCommand) Start() error {
+	//set what needs to be set..
+
+	if ec.env != nil && len(ec.env) > 0 {
+		ec.Proc.Env = ec.env
+	}
+	if ec.dir != "" {
+		ec.Proc.Dir = ec.dir
+	}
+
 	//if !ec.errOnly {
 	//	defer ec.reader.Close()
 	//}
@@ -165,14 +212,13 @@ func (ec *ExecAsyncCommand) Start() error {
 }
 
 func (ec *ExecAsyncCommand) StartAndWait() error {
-	if !ec.errOnly {
-		defer ec.reader.Close()
+	if ec.env != nil && len(ec.env) > 0 {
+		ec.Proc.Env = ec.env
 	}
-	if ec.intChan != nil && ec.intBound {
-		defer close(ec.intChan)
+	if ec.dir != "" {
+		ec.Proc.Dir = ec.dir
 	}
-	defer ec.writer.Close()
-	defer ec.error.Close()
+
 	//if ec.stdioCapture && ec.stderrWriter != nil {
 	//	if !ec.errOnly && ec.stdoutWriter != nil {
 	//		defer ec.stdoutWriter.Flush()
@@ -183,9 +229,27 @@ func (ec *ExecAsyncCommand) StartAndWait() error {
 	fmt.Printf("$: %s %s - IN: %s\n", ec.Proc.Path, strings.Join(ec.Proc.Args, ` `), ec.Proc.Dir)
 	if err := ec.Proc.Start(); err != nil {
 		return err
-	} else if err := ec.Proc.Wait(); err != nil {
+	} else if err := ec.Wait(); err != nil {
 		return err
 	}
+	return nil
+}
+
+func (ec *ExecAsyncCommand) Wait() error {
+
+	if !ec.errOnly {
+		defer ec.reader.Close()
+	}
+	if ec.intChan != nil && ec.intBound {
+		defer close(ec.intChan)
+	}
+	defer ec.writer.Close()
+	defer ec.error.Close()
+
+	if err := ec.Proc.Wait(); err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -320,19 +384,40 @@ func (ex *execUtils) RunCommandAsyncOutput(path string, errOnly bool, args ...st
 func (ex *execUtils) CreateAsyncCommand(path string, errOnly bool, args ...string) *ExecAsyncCommand {
 
 	pr := ExecAsyncCommand{
-		Proc:     exec.Command(path, args...),
+		path:     path,
+		args:     args,
 		errOnly:  errOnly,
 		intBound: false,
 	}
 
-	if !errOnly {
-		pr.reader, _ = pr.Proc.StdoutPipe()
-	}
-
-	pr.error, _ = pr.Proc.StderrPipe()
-	pr.writer, _ = pr.Proc.StdinPipe()
+	pr.init()
 
 	return &pr
+
+}
+
+func (ex *execUtils) CheckSudo() bool {
+
+	cmd := exec.Command("id", "-u")
+	output, err := cmd.Output()
+
+	if err != nil {
+		return false
+	}
+
+	// output has trailing \n
+	// need to remove the \n
+	// otherwise it will cause error for strconv.Atoi
+	// log.Println(output[:len(output)-1])
+
+	// 0 = root, 501 = non-root user
+	i, err := strconv.Atoi(string(output[:len(output)-1]))
+
+	if i != 0 || err != nil {
+		return false
+	} else {
+		return true
+	}
 
 }
 
