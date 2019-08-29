@@ -184,6 +184,20 @@ func (fu *filesUtils) GetFilesInDirWithExtension(dir string, ext string) []strin
 }
 
 // Copy copies src to dest, doesn't matter if src is a directory or a file
+func (fu *filesUtils) FileSize(path string) (uint64, error) {
+	if !fu.CheckPathExists(path) {
+		return 0, os.ErrNotExist
+	}
+	info, err := os.Lstat(path)
+	if err != nil {
+		return 0, err
+	} else if info.IsDir() {
+		return 0, os.ErrNotExist
+	}
+	return uint64(info.Size()), nil
+}
+
+// Copy copies src to dest, doesn't matter if src is a directory or a file
 func (fu *filesUtils) Copy(src, dest string) error {
 	info, err := os.Lstat(src)
 	if err != nil {
