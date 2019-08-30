@@ -93,7 +93,7 @@ func newProcManProcessFromExec(procMan *ProcessManager, options *ProcessManagerP
 
 	if options.CWD != "" {
 
-		eproc.Proc.Dir = options.CWD
+		eproc.SetWorkingDir(options.CWD)
 
 	}
 
@@ -107,7 +107,7 @@ func newProcManProcessFromExec(procMan *ProcessManager, options *ProcessManagerP
 
 		}
 
-		eproc.Proc.Env = env
+		eproc.SetEnv(env)
 
 	}
 
