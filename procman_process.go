@@ -171,7 +171,7 @@ func (pmp *ProcessManagerProcess) Wait() error {
 
 func (pmp *ProcessManagerProcess) Start() error {
 
-	err := pmp.execProc.Proc.Start()
+	err := pmp.execProc.Start()
 
 	if err != nil {
 		return err
