@@ -37,6 +37,7 @@ type ExecAsyncCommand struct {
 	intBound       bool
 	stdioBound     bool
 	stdioCapture   bool
+	stdinBound     bool
 	combineCapture bool
 	useSudo        bool
 }
@@ -78,6 +79,18 @@ func (ec *ExecAsyncCommand) BindToStdoutAndStdErr() *ExecAsyncCommand {
 		io.Copy(os.Stderr, ec.error)
 	}()
 	ec.stdioBound = true
+	return ec
+}
+
+func (ec *ExecAsyncCommand) BindToStdin() *ExecAsyncCommand {
+	if ec.stdinBound {
+		return ec
+	}
+
+	go func() {
+		io.Copy(ec.writer, os.Stdin)
+	}()
+	ec.stdinBound = true
 	return ec
 }
 
