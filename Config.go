@@ -78,7 +78,7 @@ func (cu *configUtils) establishAndLoadConfigFromPath(cwd string, configSource s
 
 		if fullPath := filepath.Join(cwd, configSource[2:]); Files.CheckPathExists(fullPath) {
 
-			return cu.loadConfigFromFile(fullPath, destinationStruct)
+			return cu.LoadConfigFromFile(fullPath, destinationStruct)
 
 		} else {
 
@@ -92,7 +92,7 @@ func (cu *configUtils) establishAndLoadConfigFromPath(cwd string, configSource s
 
 		if fullPath := filepath.Join(cwd, configSource); Files.CheckPathExists(fullPath) {
 
-			return cu.loadConfigFromFile(fullPath, destinationStruct)
+			return cu.LoadConfigFromFile(fullPath, destinationStruct)
 
 		} else {
 
@@ -104,7 +104,7 @@ func (cu *configUtils) establishAndLoadConfigFromPath(cwd string, configSource s
 
 		//full path config source...
 
-		return cu.loadConfigFromFile(configSource, destinationStruct)
+		return cu.LoadConfigFromFile(configSource, destinationStruct)
 
 	}
 
@@ -112,7 +112,7 @@ func (cu *configUtils) establishAndLoadConfigFromPath(cwd string, configSource s
 
 }
 
-func (cu *configUtils) loadConfigFromFile(path string, destinationStruct interface{}) error {
+func (cu *configUtils) LoadConfigFromFile(path string, destinationStruct interface{}) error {
 
 	if !Files.CheckPathExists(path) {
 
