@@ -94,6 +94,15 @@ func (ec *ExecAsyncCommand) BindToStdin() *ExecAsyncCommand {
 	return ec
 }
 
+func (ec *ExecAsyncCommand) Write(data []byte) error {
+	if ec.stdinBound {
+		return nil
+	}
+
+	_, err := ec.writer.Write(data)
+	return err
+}
+
 func (ec *ExecAsyncCommand) CaptureStdoutAndStdErr(combine bool, outputToStdIO bool) *ExecAsyncCommand {
 	if ec.stdioCapture {
 		return ec
