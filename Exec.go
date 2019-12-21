@@ -82,6 +82,10 @@ func (ec *ExecAsyncCommand) BindToStdoutAndStdErr() *ExecAsyncCommand {
 	return ec
 }
 
+func (ec *ExecAsyncCommand) GetPipes() (io.ReadCloser, io.ReadCloser, io.WriteCloser) {
+	return ec.reader, ec.error, ec.writer
+}
+
 func (ec *ExecAsyncCommand) BindToStdin() *ExecAsyncCommand {
 	if ec.stdinBound {
 		return ec
