@@ -172,6 +172,9 @@ func (fu *filesUtils) GetFilesInDirWithExtension(dir string, ext string) []strin
 	//fmt.Println("Checking for files with ext", ext, "in", dir)
 	var files []string
 	filepath.Walk(dir, func(path string, f os.FileInfo, _ error) error {
+		if f == nil {
+			return nil
+		}
 		if !f.IsDir() {
 			//fmt.Println("Checking", f.Name(), "Path:", path, "Ext:", filepath.Ext(path))
 			if filepath.Ext(path) == ext {
