@@ -62,7 +62,6 @@ func (ec *ExecAsyncCommand) init() *ExecAsyncCommand {
 	return ec
 }
 
-//need to fix this
 func (ec *ExecAsyncCommand) BindToStdoutAndStdErr() *ExecAsyncCommand {
 	if ec.stdioBound {
 		return ec
