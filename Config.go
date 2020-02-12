@@ -144,7 +144,7 @@ func (cu *configUtils) LoadConfigFromFile(path string, destinationStruct interfa
 
 func (cu *configUtils) writeConfigToFile(path string, conf interface{}) error {
 
-	if encConf, err := json.Marshal(conf); err != nil {
+	if encConf, err := json.MarshalIndent(conf, "", "  "); err != nil {
 
 		return err
 
