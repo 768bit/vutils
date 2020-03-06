@@ -17,7 +17,7 @@ type base58Encoder struct{}
 //strings.Replace(rpcStr, "-", "", -1)
 
 func (enc base58Encoder) EncodeFromString(u string) (string, error) {
-	ba, err := hex.DecodeString(u)
+	ba, err := hex.DecodeString(strings.Replace(u, "-", "", -1))
 	if err != nil {
 		return "", err
 	}
