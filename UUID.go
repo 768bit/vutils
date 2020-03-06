@@ -3,10 +3,44 @@ package vutils
 import (
 	"errors"
 	"fmt"
-	"github.com/google/uuid"
 	"regexp"
 	"strings"
+
+	"encoding/hex"
+
+	"github.com/btcsuite/btcutil/base58"
+	"github.com/google/uuid"
 )
+
+type base58Encoder struct{}
+
+//strings.Replace(rpcStr, "-", "", -1)
+
+func (enc base58Encoder) EncodeFromString(u string) (string, error) {
+	ba, err := hex.DecodeString(u)
+	if err != nil {
+		return "", err
+	}
+	return base58.Encode(ba), nil
+}
+
+func (enc base58Encoder) EncodeFromUUID(u *uuid.UUID) (string, error) {
+	return enc.EncodeFromString(u.String())
+}
+
+func (enc base58Encoder) DecodeToUUID(s string) (uuid.UUID, error) {
+	return uuid.FromBytes(base58.Decode(s))
+}
+
+func (enc base58Encoder) DecodeToString(s string) (string, error) {
+	u, err := uuid.FromBytes(base58.Decode(s))
+	if err != nil {
+		return "", err
+	}
+	return u.String(), nil
+}
+
+var base58EncoderInst = &base58Encoder{}
 
 type uuidUtils struct {
 	uuidStringRx         *regexp.Regexp
@@ -40,6 +74,18 @@ func (uu *uuidUtils) MakeUUIDString() (string, error) {
 	rpcIDStr := strings.ToLower(rpcID.String())
 
 	return rpcIDStr, nil
+
+}
+
+func (uu *uuidUtils) UUIDToShort(uuidIn string) (string, error) {
+
+	return base58EncoderInst.EncodeFromString(uuidIn)
+
+}
+
+func (uu *uuidUtils) ShortToUUID(shortIn string) (string, error) {
+
+	return base58EncoderInst.DecodeToString(shortIn)
 
 }
 
